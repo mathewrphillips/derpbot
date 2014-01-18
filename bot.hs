@@ -26,24 +26,27 @@ listen :: Handle -> IO ()
 listen h = forever $ do
     t <- hGetLine h
     let s = init t
-    if ping s then pong s else (if mode s then reply s else eval h (clean s))
+    if ping s then pong s else (if mode s then reply s else eval h s)
 
     putStrLn s
  where
     forever a = a >> forever a 
 
-    clean     = drop 1 . dropWhile (/= ':') . drop 1
     ping x    = "PING :" `isPrefixOf` x
     pong x    = write h "PONG" (':' : drop 6 x)
     mode x    = ":on" `isInfixOf` x 
     reply x   = write h "JOIN" chan
 
 eval :: Handle -> String -> IO ()
-eval h x | "Jordanfitz" `isInfixOf` x = privmsg h "Jordane!"
-eval h x | "ChillyFlash" `isInfixOf` x = return ()
-eval h x | "!echo" `isPrefixOf` x = privmsg h (drop 6 x) 
+--eval h x | "Jordanfitz" `isInfixOf` x = privmsg h "Jordane!"
+
 eval h x | "NOTICE" `isInfixOf` x = return ()
+eval h x | "!echo" `isInfixOf` x = privmsg h (drop 6 $ clean x) 
+eval h x | "stink" `isInfixOf` x = privmsg h "That's stinky"
 eval _   _                       = return () -- ignore everything else
 
+
+clean :: String -> String
+clean     = drop 1 . dropWhile (/= ':') . drop 1
 privmsg :: Handle -> String -> IO ()
 privmsg h s = write h "PRIVMSG" (chan ++ " :" ++ s)
